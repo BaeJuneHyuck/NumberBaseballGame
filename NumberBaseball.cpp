@@ -1,8 +1,12 @@
 #include <iostream>	
-#include <string>	// ¹®ÀÚ¿­À» ÅëÇØ ÀÔ·Â¹Ş±â
-#include <random>	// ³­¼ö »ı¼º
-#include <fstream>	// ÀüÀû ÀúÀå±â´É °ü·Ã
-#include <WinSock2.h>// [ÃâÃ³] À©µµ¿ì ¼ÒÄÏÇÁ·Î±×·¡¹Ö ±âÃÊ Áö½Ä | ÀÛ¼ºÀÚ °ú°¨ÇÏ°Ô µé¾î°¡
+#include <string>		// using String for input
+#include <random>		// for getting random digit
+#include <fstream>		// for saving records
+#include <WinSock2.h>	// for socket networking
+						// Configuration Properties => Linker => Input => Additional dependencies -> add 'ws2_32.lib'
+						// í”„ë¡œì íŠ¸ ì†ì„± -> ë§ì»¤-> ì…ë ¥ -> ì¶”ê°€ì¢…ì†ì„±ì— ws2_32.lib
+
+#pragma warning(disable:4996) // for ignore LinkWanring 'inet_addr': Use inet_pton() or InetPton() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS 
 
 using namespace std;
 
@@ -21,13 +25,13 @@ struct checkC {
 	}
 };
 
-checkC compare(int answ[], int guess[],int GameDigits) {
+checkC compare(int answ[], int guess[], int GameDigits) {
 	checkC check(0, 0);
 
 	for (int i = 0; i < GameDigits; i++) {
 		for (int j = 0; j < GameDigits; j++) {
-			if (answ[i] == guess[j]) {	// °°Àº°ªÀÌ Á¸ÀçÇÑ´Ù
-				if (i == j)				// °°Àº À§Ä¡¸é ½ºÆ®¶óÀÌÅ© ´Ù¸¥À§Ä¡¸é º¼
+			if (answ[i] == guess[j]) {	// Find Same Digit
+				if (i == j)				// If same Position strike++ else, ball++
 					check.strike++;
 				else
 					check.ball++;
@@ -37,13 +41,11 @@ checkC compare(int answ[], int guess[],int GameDigits) {
 	return check;
 }
 
-string getNumber(int GameDigits)	// ¹®ÀÚ¿­À» ÀÔ·Â¹ŞÀ½, nÀÚ¸® Á¤¼ö°¡ ¾Æ´Ò°æ¿ì ¿À·ù³ª¿Àµµ·Ï µÇ¾îÀÖÀ½
-{
-	bool ok = false;
+string getNumber(int GameDigits){	// Get only N-digits integer(by string) and return
+	bool ok = false;				
 	string result;
-	while (!ok)
-	{
-		cout << "Áßº¹¾ø´Â " << GameDigits << "ÀÚ¸® ¼ıÀÚ¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä : ";
+	while (!ok){
+		cout << "ì¤‘ë³µì—†ëŠ” " << GameDigits << "ìë¦¬ ìˆ«ìë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš” : "; // "please input (GameDigits)-digit integer without repetition"
 		cin >> result;
 		if (result.length() == GameDigits)
 		{
@@ -61,7 +63,7 @@ string getNumber(int GameDigits)	// ¹®ÀÚ¿­À» ÀÔ·Â¹ŞÀ½, nÀÚ¸® Á¤¼ö°¡ ¾Æ´Ò°æ¿ì ¿À·
 	return result;
 }
 
-bool IsRepetition(int arr[],int GameDigits ) {		// »ç¿ëÇÒ¼ö ¾ø´Â ¼ıÀÚÀÎÁö È®ÀÎÇØÁİ´Ï´Ù
+bool IsRepetition(int arr[], int GameDigits) {		// check repetition of integer array 
 	for (int i = 0; i < GameDigits; i++) {
 		for (int j = i + 1; j < GameDigits; j++) {
 			if (arr[i] == arr[j]) {
@@ -77,12 +79,15 @@ void makeProfile() {
 	string ID;
 	cout << " Input your new ID" << endl;
 	cout << " '0' for cancel " << endl;
-	
+
 	cin >> ID;
 	if (ID == "0") {
 		return;
 	}
-	os.open(SAVEPATH,'w');
+	else if (ID.length() > 20) {
+		cout << " System : Id too long(plz under 20)" << endl;
+	}
+	os.open(SAVEPATH, 'w');
 	os << ID << endl;
 	for (int i = 0; i < 8; i++) {
 		os << 0 << endl;
@@ -91,10 +96,10 @@ void makeProfile() {
 }
 
 void showRecord() {
-	
+
 	ifstream is;
 	is.open(SAVEPATH);
-	if (! is.is_open() ) {
+	if (!is.is_open()) {
 		cout << "record file Not found" << endl;
 		return;
 	}
@@ -105,26 +110,21 @@ void showRecord() {
 	int length = ID.length();
 
 	is >> ID; // ID
-	is >> data[0]; // triple ÃÑ °ÔÀÓÈ½¼ö
-	is >> data[1]; // triple ÃÖ°íÁ¡¼ö
-	is >> data[2]; // quadruple ÃÑ °ÔÀÓÈ½¼ö
-	is >> data[3]; // quadruple ÃÖ°íÁ¡¼ö
-	is >> data[4]; // network game total
-	is >> data[5]; // network win
-	is >> data[6]; // network lose
-	is >> data[7]; // network draw
+	for (int i = 0; i < 8; i++) {
+		is >> data[i];
+	}
 	cout << " ----------------Record------------------" << endl;
-	cout << "           ID             : " << ID <<  endl;
+	cout << "           ID             : " << ID << endl;
 	cout << "    number of Triple      : " << data[0] << " times" << endl;
 	cout << "        best score        : " << data[1] << endl;
 	cout << "    number of Qudaruple   : " << data[2] << " times" << endl;
 	cout << "        best score        : " << data[3] << endl;
-	cout << "  Multi Play(Total/W/L/D) : " << data[4] <<"/"<<data[5]<<"/"<<data[6] <<"/"<< data[7] << endl;
+	cout << "  Multi Play(Total/W/L/D) : " << data[4] << "/" << data[5] << "/" << data[6] << "/" << data[7] << endl;
 
 	is.close();
 }
 
-void saveRecord(int GameDigits, int checkCount) {  // gamedigit =>  0 ³İ½Â¸®, 1³İÆĞ¹è,2³İ¹«½ÂºÎ, 3 ½Ì±ÛÆ®¸®ÇÃ,4½Ì±ÛÄõµå¶óÇÃ 
+void saveRecord(int GameDigits, int checkCount) {  // gamedigit =>  0 net win, 1 net lose, 2 net draw, 3 single trip, 4 single quad 
 	ifstream is;
 	is.open(SAVEPATH);
 	if (!is.is_open()) {
@@ -156,7 +156,8 @@ void saveRecord(int GameDigits, int checkCount) {  // gamedigit =>  0 ³İ½Â¸®, 1³
 		data[0]++;
 		if (data[1] < 101 - checkCount)
 			data[1] = 101 - checkCount;
-	}else if (GameDigits == 4) {
+	}
+	else if (GameDigits == 4) {
 		data[2]++;
 		if (data[3] < 101 - checkCount)
 			data[3] = 101 - checkCount;
@@ -166,50 +167,53 @@ void saveRecord(int GameDigits, int checkCount) {  // gamedigit =>  0 ³İ½Â¸®, 1³
 	os << ID << endl;
 
 	for (int i = 0; i < 8; i++) {
-		os << data[i] <<endl;
+		os << data[i] << endl;
 	}
 	os.close();
+	cout << " record saved " << endl;
 }
 
-void runGame(int GameDigits) {
-
-	// game start : make a random 4 digits integer using each number once 
+void makeRandNumber(int * target, int GameDigits) {
 	random_device rd;     // only used once to initialise (seed) engine
 	mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
 	uniform_int_distribution<int> uni(0, 9); // guaranteed unbiased
 
 	auto random_integer = uni(rng);
-	int answ[10] = { 0,};
-	while (IsRepetition(answ, GameDigits)) {
+
+	while (IsRepetition(target, GameDigits)) { // number must be non-Repeating digits for NumberBaseballGame
 		for (int i = 0; i < GameDigits; i++) {
-			answ[i] = uni(rng);
+			target[i] = uni(rng);
 		}
 	}
+}
 
-	int checkCount = 0;  // È®ÀÎÇÑ È½¼ö ( Á¡¼ö )
+void runGame(int GameDigits) {
+
+	int answ[10] = { 0, };
+	makeRandNumber(answ, GameDigits);
+	int checkCount = 0; 
 
 	cout << "**************************************" << endl;
 	cout << "             Play Ball                " << endl;
 	cout << "**************************************" << endl;
 
-	while (1) { // 4½ºÆ®¶óÀÌÅ©°¡ ³ª¿ÀÁö ¾Ê¾Ò´Ù¸é ÀÌÇÏ¸¦ ¹İº¹
-				// ÀÔ·Â¹Ş¾Æ¼­ ÀúÀå   ( ÀÌ¶§ ÀÔ·Â¹ŞÀº ¼ıÀÚ 4°³¿¡ Áßº¹ÀÌ ÀÖÀ¸¸é Àç½Ãµµ ¿ä±¸)
-				// ÀÔ·Â¹ŞÀº°ª°ú ºñ±³ ( 
-				// °á°ú Ãâ·Â			( 4strike ÀÏ°æ¿ì ¼ıÀÚ¸¦ ¸ÂÃá°ÍÀÌ¹Ç·Î °ÔÀÓ Á¾·á)
-
+	for (int i = 0; i < GameDigits; i++) {
+		cout << answ[i];
+	}cout << endl;
+	while (1) { // loop until strike == (GameDigits)
 		string input;
 		int output[10];
 
 		do {
-			input = getNumber(GameDigits);		// ¹®ÀÚ¿­À» ÀÔ·Â¹ŞÀ½, 4ÀÚ¸® Á¤¼ö°¡ ¾Æ´Ò°æ¿ì ¿À·ù³ª¿Àµµ·Ï µÇ¾îÀÖÀ½
+			input = getNumber(GameDigits);		// Get string, If not (GameDigits)-digit integer, wait input again
 			for (int i = 0; i < GameDigits; i++) {
-				output[i] = input[i] -'0';
+				output[i] = input[i] - '0';
 			}
-		} while (IsRepetition(output, GameDigits));	// Á¤¼ö¹è¿­¿¡ Áßº¹ÀÌ ÀÖÀ¸¸é ¾ÈµÊ
+		} while (IsRepetition(output, GameDigits));	// there should be no repetition 
 
 		checkC compareResult = compare(answ, output, GameDigits);
-		cout << ++checkCount << "È¸ : " << input << " (Strike :" << compareResult.getStrike() << "  Ball :" << compareResult.getBall() << ")" << endl;
-		if (compareResult.getStrike() == GameDigits)// Á¤´äÀ» ¸ÂÃß¸é °ÔÀÓÀÌ Á¾·áµË´Ï´Ù
+		cout << ++checkCount << "â–¼: " << input << " (Strike :" << compareResult.getStrike() << "  Ball :" << compareResult.getBall() << ")" << endl;
+		if (compareResult.getStrike() == GameDigits) // game end
 			break;
 	}
 
@@ -218,7 +222,6 @@ void runGame(int GameDigits) {
 	cout << "*            Score : " << 101 - checkCount << "              *" << endl;
 	cout << "**************************************" << endl << endl;
 
-	cout << " ÀüÀûÀ» ÀúÀåÇÕ´Ï´Ù" << endl;
 	saveRecord(GameDigits, checkCount);
 }
 
@@ -229,8 +232,8 @@ int netWorkServer() {
 	int clientsize;
 	int strlen;
 
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) { // ÃÊ±âÈ­ ½ÇÆĞ
-		cout << "network init fail " << endl; 
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+		cout << "network init fail " << endl;
 		return 1;
 	}
 
@@ -246,73 +249,77 @@ int netWorkServer() {
 	sockinfo.sin_port = htons(1234);
 	sockinfo.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	if (bind(sock, (SOCKADDR*)&sockinfo, sizeof(sockinfo)) == SOCKET_ERROR) { // bind
+	if (bind(sock, (SOCKADDR*)&sockinfo, sizeof(sockinfo)) == SOCKET_ERROR) {
 		cout << "bind fail " << endl;
 		return 1;
 	}
 
-	if (listen(sock, 5) == SOCKET_ERROR) { // Åë·Î(backlog) 5°³¸¦ °¡Áö°í ´ë±â
-		cout << "´ë±â¿­ ½ÇÆĞ" << endl;
+	if (listen(sock, 5) == SOCKET_ERROR) {
+		cout << "listen fail" << endl;
 		return 1;
 	}
 
 	clientsize = sizeof(clientinfo);
 	cout << "waiting client... " << endl;
 
-	//				(¼­¹ö¼ÒÄÏ, Å¬¶óÀÌ¾ğÆ® ÁÖ¼Ò°ª, Å¬¶óÀÌ¾ğÆ® ÁÖ¼Ò°ª »çÀÌÁî)
-	clientsock = accept(sock, (SOCKADDR*)&clientinfo, &clientsize); // ´ë±â¿­ÀÇ ¿äÃ»À» ¹Ş¾Æ¼­ ¿¬°á¼ÒÄÏ »ı¼º
+	clientsock = accept(sock, (SOCKADDR*)&clientinfo, &clientsize);
 	if (clientsock == INVALID_SOCKET) {
-		cout << "client network failed " << endl;
+		cout << "Invalid client socket " << endl;
 		return 1;
 	}
-	// Àü¼ÛÇÒ ¼ÒÄÏ µğ½ºÅ©¸³ÅÍ, Àü¼ÛÇÒ µ¥ÀÌÅÍÆ÷ÀÎÅÍ, µ¥ÀÌÅÍ ±æÀÌ, ÇÔ¼öÇÃ·¡±×
-	//  send(clientsock, message, sizeof(message), 0);
+
+	// get ID
+	ifstream is;
+	char myID[20];
+	char enemyID[20];
+
+	is.open(SAVEPATH);
+	if (!is.is_open()) {
+		cout << "profile not found" << endl;
+		strcpy(myID, "Guest");
+	}
+	else {
+		is >> myID;
+		is.close();
+	}
+	send(clientsock, myID, sizeof(myID), 0);
+	strlen = recv(clientsock, enemyID, sizeof(enemyID), 0);
 
 	// Start Game //
-	random_device rd;    
-	mt19937 rng(rd());
-	uniform_int_distribution<int> uni(0, 9);
-	int GameDigits = 4;
 
-	auto random_integer = uni(rng);
-	int answ[10] = {0,};
-	while (IsRepetition(answ, GameDigits)) {
-		for (int i = 0; i < GameDigits; i++) {
-			answ[i] = uni(rng);
-		}
-	}
-
-	int checkCount = 0;  // È®ÀÎÇÑ È½¼ö ( Á¡¼ö )
-	bool myTurn = true;
+	int GameDigits = 4;		// network game is Quadruple
+	string input;			// input from std input
+	int output[10];			// output parsed from input
+	char gameData[8];		// data for socket send message
+							// index : [0~3] player's guess, [4]th try, [5] strike, [6] ball, [7]gameStatus
+	int checkCount = 0;		// try
+	int answ[10] = { 0, };
+	makeRandNumber(answ, GameDigits);
+	
 	cout << "******************************************l***********************************" << endl;
-	cout << "             Play Ball                    l              Away                 " << endl;
+	cout << "             " << myID << "                                   " << enemyID << "                 " << endl;
 	cout << "******************************************l***********************************" << endl;
 
 	while (1) {
-		if (clientsock == INVALID_SOCKET) {
+		if (clientsock == INVALID_SOCKET) { // check network status
 			cout << "client network failed " << endl;
-
 			closesocket(sock);
 			closesocket(clientsock);
-
 			WSACleanup();
 			break;
 		}
-		string input;
-		int output[10];
-		char gameData[8];
 
 		do {
-			input = getNumber(GameDigits);		// ¹®ÀÚ¿­À» ÀÔ·Â¹ŞÀ½, 4ÀÚ¸® Á¤¼ö°¡ ¾Æ´Ò°æ¿ì ¿À·ù³ª¿Àµµ·Ï µÇ¾îÀÖÀ½
+			input = getNumber(GameDigits);
 			for (int i = 0; i < GameDigits; i++) {
 				output[i] = input[i] - '0';
 			}
-		} while (IsRepetition(output, GameDigits));	// Á¤¼ö¹è¿­¿¡ Áßº¹ÀÌ ÀÖÀ¸¸é ¾ÈµÊ
+		} while (IsRepetition(output, GameDigits));
 
 		checkC compareResult = compare(answ, output, GameDigits);
-		cout << ++checkCount << "È¸ ÃÊ : " << input << " (Strike :" << compareResult.getStrike() << "  Ball :" << compareResult.getBall() << ")" << endl;
+		cout << ++checkCount << "â–²: " << input << " (Strike :" << compareResult.getStrike() << "  Ball :" << compareResult.getBall() << ")" << endl;
 		if (compareResult.getStrike() == GameDigits)
-			checkCount = 0;
+			gameData[7] = '1';	// gameStatus '1' for "Client win"
 
 		for (int i = 0; i < 4; i++) {
 			gameData[i] = output[i] + '0';
@@ -321,23 +328,19 @@ int netWorkServer() {
 		gameData[5] = compareResult.getStrike() + '0';
 		gameData[6] = compareResult.getBall() + '0';
 
-		myTurn = false;
 		send(clientsock, gameData, sizeof(gameData), 0);
 
 		strlen = recv(clientsock, gameData, sizeof(gameData), 0);
 		if (strlen == -1) {
-			cout << " recieve failed" << endl; 
-
+			cout << " recieve failed" << endl;
 			closesocket(sock);
 			closesocket(clientsock);
-
 			WSACleanup();
 			return 1;
-		}		
-		cout <<"                                           "
-			<< gameData[4] << "È¸ ¸» : " << gameData[0] << gameData[1] << gameData[2] << gameData[3] << " (Strike :" << gameData[5] << "  Ball :" << gameData[6] << ")" << endl;
+		}
+		cout << "                                           "
+			<< int(gameData[4] - '0') << "â–¼: " << gameData[0] << gameData[1] << gameData[2] << gameData[3] << " (Strike :" << gameData[5] << "  Ball :" << gameData[6] << ")" << endl;
 		if (gameData[7] == '1') {
-			// ¼­¹ö°¡ ½Â¸® °ÔÀÓÁß´Ü
 			cout << "**************************************" << endl;
 			cout << "*             Win                    *" << endl;
 			cout << "**************************************" << endl << endl;
@@ -358,26 +361,19 @@ int netWorkServer() {
 			saveRecord(2, 0);
 			break;
 		}
-		bool myTurn = true;
 	}
-	// °ÔÀÓ³¡
 	closesocket(sock);
 	closesocket(clientsock);
-
 	WSACleanup();
-
 	return 0;
 }
 
 int netWorkClient() {
-	// 127.0.0.1 : ÀÚ±âÈ£Ãâ IP»ç¿ë
-	// Æ÷Æ®´Â 1234
 
 	SOCKET clientsock;
 	WSADATA wsa;
 	struct sockaddr_in sockinfo;
-
-	int strlen; // recv ¸®ÅÏ°ª ÀúÀå
+	int strlen;
 
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
 		cout << "init failed" << endl;
@@ -385,54 +381,59 @@ int netWorkClient() {
 	}
 	clientsock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (clientsock == INVALID_SOCKET) {
-		cout << "client socket failed" << endl;
+		cout << "Invalid client socket" << endl;
 		return 1;
 	}
 
-	memset(&sockinfo, 0, sizeof(sockinfo)); // ÁÖ¼Ò ±¸Á¶Ã¼ ÃÊ±âÈ­
+	memset(&sockinfo, 0, sizeof(sockinfo));
 
 	sockinfo.sin_family = AF_INET;
-	sockinfo.sin_port = htons(1234); // Æ÷Æ®·Î 1234 »ç¿ë
-	sockinfo.sin_addr.s_addr = inet_addr("127.0.0.1"); // IP ÀÔ·Â¹Ş±â
-
-	if (connect(clientsock,(SOCKADDR*)&sockinfo, sizeof(sockinfo)) == SOCKET_ERROR){
-		cout << "server link failed" << endl;
+	sockinfo.sin_port = htons(1234); // using port "1234"
+	sockinfo.sin_addr.s_addr = inet_addr("127.0.0.1"); // set Server IP (127.0.0.1 for test)
+ 
+	if (connect(clientsock, (SOCKADDR*)&sockinfo, sizeof(sockinfo)) == SOCKET_ERROR) {
+		cout << "connect failed" << endl;
 		return 1;
 	}
 
-	// °ÔÀÓ ½ÃÀÛ//
-	// Start Game //
-	std::random_device rd;
-	std::mt19937 rng(rd());
-	std::uniform_int_distribution<int> uni(0, 9);
-	int GameDigits = 4;
+	// get ID
+	ifstream is;
+	char myID[20];
+	char enemyID[20];
 
-	auto random_integer = uni(rng);
-	int answ[4] = { 0,0,0,0 };
-	while (IsRepetition(answ, GameDigits)) {
-		for (int i = 0; i < GameDigits; i++) {
-			answ[i] = uni(rng);
-		}
+	is.open(SAVEPATH);
+	if (!is.is_open()) {
+		cout << "profile not found" << endl;
+		strcpy(myID, "Guest");
+	}
+	else {
+		is >> myID;
+		is.close();
 	}
 
-	int checkCount = 0;  // È®ÀÎÇÑ È½¼ö ( Á¡¼ö )
-	bool myTurn = false;
-	cout << "******************************************l***********************************" << endl;
-	cout << "             Play Ball                    l              Away                 " << endl;
-	cout << "******************************************l***********************************" << endl;
+	strlen = recv(clientsock, enemyID, sizeof(enemyID), 0);
+	send(clientsock, myID, sizeof(myID), 0);
 
+	// Start Game //
+	int GameDigits = 4;
+	int checkCount = 0;
 	string input;
 	int output[10];
 	char gameData[8];
+	int answ[4] = { 0,0,0,0 };
+	makeRandNumber(answ, GameDigits);
+	
+	cout << "******************************************l***********************************" << endl;
+	cout << "             " << myID << "                                   " << enemyID << "                 " << endl;
+	cout << "******************************************l***********************************" << endl;
 
 	strlen = recv(clientsock, gameData, sizeof(gameData), 0);
 	if (strlen == -1) {
-		cout << " recieve failed" << endl; 
-		return 0;
+		cout << " recieve failed" << endl;
+		return 1;
 	}
-	cout << "                                           " 
-		<< gameData[4] << "È¸ ÃÊ : " << gameData[0] << gameData[1] << gameData[2] << gameData[3] << " (Strike :" << gameData[5] << "  Ball :" << gameData[6] << ")" << endl;
-	myTurn = true;
+	cout << "                                           "
+		<< int(gameData[4] - '0') << "â–²: " << gameData[0] << gameData[1] << gameData[2] << gameData[3] << " (Strike :" << gameData[5] << "  Ball :" << gameData[6] << ")" << endl;
 
 	while (1) {
 
@@ -445,26 +446,24 @@ int netWorkClient() {
 		}
 
 		do {
-			input = getNumber(GameDigits);		// ¹®ÀÚ¿­À» ÀÔ·Â¹ŞÀ½, 4ÀÚ¸® Á¤¼ö°¡ ¾Æ´Ò°æ¿ì ¿À·ù³ª¿Àµµ·Ï µÇ¾îÀÖÀ½
+			input = getNumber(GameDigits);
 			for (int i = 0; i < GameDigits; i++) {
 				output[i] = input[i] - '0';
 			}
-		} while (IsRepetition(output, GameDigits));	// Á¤¼ö¹è¿­¿¡ Áßº¹ÀÌ ÀÖÀ¸¸é ¾ÈµÊ
+		} while (IsRepetition(output, GameDigits));
 
 		checkC compareResult = compare(answ, output, GameDigits);
-		cout << ++checkCount << "È¸ ¸» : " << input << " (Strike :" << compareResult.getStrike() << "  Ball :" << compareResult.getBall() << ")" << endl;
+		cout << ++checkCount << "â–¼: " << input << " (Strike :" << compareResult.getStrike() << "  Ball :" << compareResult.getBall() << ")" << endl;
 
-		if (compareResult.getStrike() == GameDigits) {
-			if (gameData[5] == '4') {  // ¼­¹öµµ °°Àº È¸Â÷¿¡ °ÔÀÓÀ» ³¡³Á¾ù´Ù -> ¹«½ÂºÎ
-				gameData[7] = '3';
-
-
+		if (compareResult.getStrike() == GameDigits) {	// Client end the Game
+			if (gameData[5] == '4') {  // Server also ended the game -> Draw
 				for (int i = 0; i < 4; i++) {
 					gameData[i] = output[i] + '0';
 				}
 				gameData[4] = checkCount + '0';
 				gameData[5] = compareResult.getStrike() + '0';
 				gameData[6] = compareResult.getBall() + '0';
+				gameData[7] = '3'; // GameData[7] for transfer "draw" to Server
 
 				send(clientsock, gameData, sizeof(gameData), 0);
 				cout << "**************************************" << endl;
@@ -473,16 +472,14 @@ int netWorkClient() {
 				saveRecord(2, 0);
 				break;
 			}
-			else {  // ³ª´Â 4½ºÀÎµ¥ ¼­¹ö´Â4½º°¡ ¾Æ´Ô -> ½Â¸®
-				gameData[7] = '2';
-
-
+			else {  // Server did not finished -> Client Win
 				for (int i = 0; i < 4; i++) {
 					gameData[i] = output[i] + '0';
 				}
 				gameData[4] = checkCount + '0';
 				gameData[5] = compareResult.getStrike() + '0';
 				gameData[6] = compareResult.getBall() + '0';
+				gameData[7] = '2'; // GameData[7] for transfer "Client Win" to Server
 
 				send(clientsock, gameData, sizeof(gameData), 0);
 				cout << "**************************************" << endl;
@@ -492,46 +489,42 @@ int netWorkClient() {
 				break;
 			}
 		}
-		else if (gameData[5] == '4') { // ³ª´Â 4½ºÆ®¶óÀÌÅ©°¡ ¾Æ´Ñµ¥ »ó´ë°¡ 4½º¿´´Ù -> Á³´Ù
-			gameData[7] ='1';
-
+		else if (gameData[5] == '4') { // Server ended Game but client yet -> "Client Lose"
 			for (int i = 0; i < 4; i++) {
 				gameData[i] = output[i] + '0';
 			}
 			gameData[4] = checkCount + '0';
 			gameData[5] = compareResult.getStrike() + '0';
 			gameData[6] = compareResult.getBall() + '0';
+			gameData[7] = '1'; // GameData[7] for transfer "Client Lose" to Server
 
 			send(clientsock, gameData, sizeof(gameData), 0);
-
 			cout << "**************************************" << endl;
 			cout << "*             Lose                   *" << endl;
 			cout << "**************************************" << endl << endl;
 			saveRecord(1, 0);
 			break;
 		}
-		else { // ¾Æ¹«»óÈ²µµ ¾Æ´Ï´Ù - >°ÔÀÓ °è¼Ó
-			gameData[7] = '0';
-
+		else { // no Situation 
 			for (int i = 0; i < 4; i++) {
 				gameData[i] = output[i] + '0';
 			}
 			gameData[4] = checkCount + '0';
 			gameData[5] = compareResult.getStrike() + '0';
 			gameData[6] = compareResult.getBall() + '0';
+			gameData[7] = '0'; // GameData[7] for transfer "keep going on" to Server
 
 			send(clientsock, gameData, sizeof(gameData), 0);
 			strlen = recv(clientsock, gameData, sizeof(gameData), 0);
 			if (strlen == -1) {
-				cout << " recieve failed" << endl; 
+				cout << " recieve failed" << endl;
 				closesocket(clientsock);
 				WSACleanup();
 				return 1;
 			}
-			cout << "                                           " 
-				<< gameData[4] << "È¸ ÃÊ : " << gameData[0] << gameData[1] << gameData[2] << gameData[3] << " (Strike :" << gameData[5] << "  Ball :" << gameData[6] << ")" << endl;
-
-	  	}
+			cout << "                                           "
+				<< int(gameData[4]-'0') << "â–²: " << gameData[0] << gameData[1] << gameData[2] << gameData[3] << " (Strike :" << gameData[5] << "  Ball :" << gameData[6] << ")" << endl;
+		}
 	}
 	closesocket(clientsock);
 	WSACleanup();
@@ -541,14 +534,9 @@ int netWorkClient() {
 
 int main()
 {
-	system("mode 80,25");   //Set mode to ensure window does not exceed buffer size
-	//SMALL_RECT WinRect = { 0, 0, 80, 25 };   //New dimensions for window in 8x12 pixel chars
-	//SMALL_RECT* WinSize = &WinRect;
-	//SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), true, WinSize);   //Set new size for window
-
-	cout << "            Number Baseball Game  "  << endl;
-	cout << "                          0.1v" << endl << endl;
-	while(1){
+	cout << "            Number Baseball Game  " << endl;
+	cout << "                          0.2v" << endl << endl;
+	while (1) {
 		bool ok = false;
 		string gamemodeS;
 		cout << " ---------------------------------------" << endl;
@@ -568,9 +556,9 @@ int main()
 			{
 				bool allDigits = true;
 				allDigits = allDigits && (
-				(gamemodeS[0] >= '0') &&
-				(gamemodeS[0] <= '6')
-				);
+					(gamemodeS[0] >= '0') &&
+					(gamemodeS[0] <= '6')
+					);
 				ok = allDigits;
 			}
 		}
